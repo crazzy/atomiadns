@@ -150,7 +150,15 @@ sub add_zone {
 		if ($domain_id == -1) {
 			$query = "INSERT INTO domains (name, type) VALUES ($name, '$zone_type')";
 			$self->dbi->do($query) || die "error inserting domain row: $DBI::errstr";
-			$domain_id = $self->dbi->last_insert_id(undef, undef, "domains", undef) || die "error retrieving last_insert_id";
+            if (!($domain_id = $self->dbi->last_insert_id(undef, undef, "domains", undef))) {
+                $sql_domain_id = $self->dbi->selectrow_arrayref("SELECT LAST_INSERT_ID()");
+                if (!$sql_domain_id) {
+                    die "error retrieving last_insert_id";
+                }
+                else {
+                    $domain_id = $sql_domain_id->[0];
+                }
+            }
 		} elsif ($domain_id != -1 && $zone_type ne $domain_type) {
 			$query = "UPDATE domains SET type = '$zone_type' WHERE id = $domain_id";
 			$self->dbi->do($query) || die "error updating zone type: $DBI::errstr";
